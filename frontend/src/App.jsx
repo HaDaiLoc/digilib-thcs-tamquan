@@ -8,6 +8,7 @@ import LoginPage from './pages/Auth/Login';
 import RegisterPage from './pages/Auth/Register';
 import ExamPage from './pages/Exam/Index';
 import ScrollToTop from './components/ScrollToTop';
+import SlidePage from './pages/Slides/Index';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/exams" element={<ExamPage />} />
+          <Route path="/slides" element={<SlidePage />} />
         </Routes>
       </div>
     </Router>

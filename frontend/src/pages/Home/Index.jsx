@@ -5,7 +5,7 @@ const HomePage = () => {
   const categories = [
     { n: 'Ebooks', i: '📖', c: 'bg-blue-50', path: '/library' },
     { n: 'Đề thi & Đề cương', i: '📝', c: 'bg-green-50', path: '/exams' },
-    { n: 'Slide Bài giảng', i: '💻', c: 'bg-yellow-50', path: '/library' },
+    { n: 'Slide Bài giảng', i: '💻', c: 'bg-yellow-50', path: '/slides' },
     { n: 'Góc Tặng sách', i: '🎁', c: 'bg-pink-50', path: '/donation' },
   ];
 
