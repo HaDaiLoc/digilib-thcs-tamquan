@@ -102,10 +102,10 @@ Noi cau hinh URL mac dinh cua backend la `frontend/src/config/api.js`.
 Co the tao file `frontend/.env` neu muon doi API URL:
 
 ```env
-VITE_API_BASE_URL=http://127.0.0.1:8001/api
+VITE_API_BASE_URL=https://digilab-thcs-tamquan.onrender.com/api
 ```
 
-Neu khong khai bao, frontend mac dinh goi `http://127.0.0.1:8001/api`.
+Neu khong khai bao, frontend mac dinh goi `https://digilab-thcs-tamquan.onrender.com/api`.
 
 ## Cai dat va chay du an
 
