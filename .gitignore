@@ -11,10 +11,15 @@ __pycache__/
 venv/
 ENV/
 .env
+.env.*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Vite/React
 .vite/
 .eslintcache
+coverage/
 
 # Logs
 npm-debug.log*
@@ -29,3 +34,8 @@ Thumbs.db
 # IDE (Cấu hình riêng của VS Code)
 .vscode/
 .idea/
+
+# OS / Editor backups
+*.swp
+*.swo
+*~

@@ -1,19 +1,42 @@
-import React, { useState } from 'react';
-import BookCard from '../../components/cards/BookCard'; // Tận dụng lại Card cũ hoặc tạo ExamCard mới
+import React, { useEffect, useState } from 'react';
+import BookCard from '../../components/cards/BookCard';
+import { getDocumentsBySection, getUniqueSubjects } from '../../services/apiService';
 
 const ExamPage = () => {
-  const exams = [
-    { id: 1, title: "Đề cương ôn tập Toán 9 - Học kỳ 1", author: "Tổ Toán", category: "Toán", grade: "Khối 9", type: "Đề cương", image: "https://img.freepik.com/free-vector/math-concept-illustration_114360-3916.jpg" },
-    { id: 2, title: "Đề thi thử Ngữ Văn vào 10 - Năm 2024", author: "Tổ Văn", category: "Văn", grade: "Khối 9", type: "Đề thi", image: "https://lh5.googleusercontent.com/proxy/f0vR2hyba-gjH4NdoLRWhMDYUDjf8_nd2fyjPUDDzwLpEG7Cbhzi8MCSr70k9vXJf4zYKJxPf9ZIpbQxpO5-CeNg3OGLuZLpg2WtPkjD00Wkj8wEkmCvnOMMIuooN1kzer_hXB7IOpzsdYr-W1nOx0XrThi4zaFnknE7QvjteA" },
-    { id: 3, title: "Bộ câu hỏi trắc nghiệm Sử 8", author: "Thầy Bình", category: "Sử", grade: "Khối 8", type: "Trắc nghiệm", image: "https://img.freepik.com/free-vector/history-concept-illustration_114360-1123.jpg" },
-    { id: 4, title: "Đề thi học kỳ 2 Tiếng Anh 7", author: "Cô Mai", category: "Anh", grade: "Khối 7", type: "Đề thi", image: "https://img.freepik.com/free-vector/english-teacher-concept-illustration_114360-7477.jpg" },
-  ];
+  const [exams, setExams] = useState([]);
+  const [subjects, setSubjects] = useState(['Tất cả']);
+  const [filterType, setFilterType] = useState('Tất cả');
+  const [selectedGrade, setSelectedGrade] = useState('Tất cả');
+  const [selectedSubject, setSelectedSubject] = useState('Tất cả');
 
-  const [filterType, setFilterType] = useState("Tất cả");
+  useEffect(() => {
+    let isMounted = true;
 
-  const filteredExams = filterType === "Tất cả" 
-    ? exams 
-    : exams.filter(ex => ex.type === filterType);
+    const loadData = async () => {
+      const [nextExams, nextSubjects] = await Promise.all([
+        getDocumentsBySection('exams'),
+        getUniqueSubjects('exams'),
+      ]);
+
+      if (isMounted) {
+        setExams(nextExams);
+        setSubjects(['Tất cả', ...nextSubjects]);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredExams = exams.filter((exam) => {
+    const matchType = filterType === 'Tất cả' || exam.resourceType === filterType;
+    const matchGrade = selectedGrade === 'Tất cả' || exam.grade === selectedGrade;
+    const matchSubject = selectedSubject === 'Tất cả' || exam.subject === selectedSubject;
+    return matchType && matchGrade && matchSubject;
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -29,7 +52,7 @@ const ExamPage = () => {
           <div className="bg-white p-5 rounded-xl shadow-sm border">
             <h3 className="font-bold mb-4 text-gray-800">Phân loại</h3>
             <div className="flex flex-col gap-3">
-              {["Tất cả", "Đề cương", "Đề thi", "Trắc nghiệm"].map(type => (
+              {["Tất cả", "Đề cương", "Đề thi"].map(type => (
                 <button 
                   key={type}
                   onClick={() => setFilterType(type)}
@@ -40,21 +63,51 @@ const ExamPage = () => {
               ))}
             </div>
           </div>
+
+          <div className="bg-white p-5 rounded-xl shadow-sm border">
+            <h3 className="font-bold mb-4 text-gray-800">Khối lớp</h3>
+            <div className="flex flex-col gap-3">
+              {["Tất cả", "Khối 6", "Khối 7", "Khối 8", "Khối 9"].map(grade => (
+                <button 
+                  key={grade}
+                  onClick={() => setSelectedGrade(grade)}
+                  className={`text-left px-4 py-2 rounded-lg text-sm transition ${selectedGrade === grade ? 'bg-blue-100 text-blue-600 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}
+                >
+                  {grade}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-xl shadow-sm border">
+            <h3 className="font-bold mb-4 text-gray-800">Môn học</h3>
+            <div className="flex flex-col gap-3">
+              {subjects.map(subject => (
+                <button 
+                  key={subject}
+                  onClick={() => setSelectedSubject(subject)}
+                  className={`text-left px-4 py-2 rounded-lg text-sm transition ${selectedSubject === subject ? 'bg-emerald-100 text-emerald-600 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}
+                >
+                  {subject}
+                </button>
+              ))}
+            </div>
+          </div>
         </aside>
 
         {/* Danh sách đề thi */}
         <div className="flex-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredExams.map((exam) => (
-              <BookCard 
-                key={exam.id}
-                title={exam.title}
-                author={exam.author}
-                category={exam.type} // Hiển thị loại đề ở phần nhãn
-                image={exam.image}
-              />
+              <BookCard key={exam.id} document={exam} />
             ))}
           </div>
+
+          {filteredExams.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-xl border border-dashed text-gray-400 mt-6">
+              Chưa có đề thi phù hợp với bộ lọc hiện tại.
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

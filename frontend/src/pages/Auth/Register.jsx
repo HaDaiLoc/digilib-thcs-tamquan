@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../store/AuthContext';
+import { getApiErrorMessage } from '../../services/apiService';
 
 const RegisterPage = () => {
+  const { register } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
     studentId: '',
@@ -10,15 +14,23 @@ const RegisterPage = () => {
     password: '',
     confirmPassword: ''
   });
+  const [error, setError] = useState('');
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Mật khẩu xác nhận không khớp!");
+      setError('Mật khẩu xác nhận không khớp.');
       return;
     }
-    console.log("Dữ liệu đăng ký:", formData);
-    alert("Đăng ký thành công! Chào mừng bạn đến với DigiLib.");
+
+    try {
+      await register(formData);
+      navigate('/');
+    } catch (registerError) {
+      setError(getApiErrorMessage(registerError, 'Không thể đăng ký tài khoản.'));
+    }
   };
 
   return (
@@ -28,6 +40,10 @@ const RegisterPage = () => {
           <h2 className="text-3xl font-extrabold text-gray-900">Tạo tài khoản mới</h2>
           <p className="mt-2 text-sm text-gray-600">Gia nhập cộng đồng học tập Tam Quan</p>
         </div>
+        <div className="rounded-2xl bg-blue-50 px-4 py-4 text-sm text-blue-700">
+          Biểu mẫu này dành cho học sinh. Tài khoản nhà trường và giáo viên đang được tạo sẵn trong chế độ demo.
+        </div>
+        {error ? <div className="rounded-2xl bg-red-50 text-red-700 px-4 py-3">{error}</div> : null}
 
         <form className="mt-8 space-y-4" onSubmit={handleRegister}>
           <div className="space-y-3">
@@ -36,6 +52,7 @@ const RegisterPage = () => {
               <input
                 type="text"
                 required
+                value={formData.fullName}
                 className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="Nguyễn Văn A"
                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
@@ -48,6 +65,7 @@ const RegisterPage = () => {
                 <input
                   type="text"
                   required
+                  value={formData.studentId}
                   className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="2024HS001"
                   onChange={(e) => setFormData({...formData, studentId: e.target.value})}
@@ -56,6 +74,7 @@ const RegisterPage = () => {
               <div>
                 <label className="text-sm font-semibold text-gray-700">Khối</label>
                 <select 
+                  value={formData.grade}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 sm:text-sm"
                   onChange={(e) => setFormData({...formData, grade: e.target.value})}
                 >
@@ -72,6 +91,7 @@ const RegisterPage = () => {
               <input
                 type="email"
                 required
+                value={formData.email}
                 className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="hocsinh@thcstamquan.edu.vn"
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -83,6 +103,7 @@ const RegisterPage = () => {
               <input
                 type="password"
                 required
+                value={formData.password}
                 className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="********"
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
@@ -94,6 +115,7 @@ const RegisterPage = () => {
               <input
                 type="password"
                 required
+                value={formData.confirmPassword}
                 className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="********"
                 onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}

@@ -9,6 +9,9 @@ import RegisterPage from './pages/Auth/Register';
 import ExamPage from './pages/Exam/Index';
 import ScrollToTop from './components/ScrollToTop';
 import SlidePage from './pages/Slides/Index';
+import DocumentDetailPage from './pages/Documents/Detail';
+import ManagePage from './pages/Manage/Index';
+import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
   return (
@@ -24,6 +27,15 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/exams" element={<ExamPage />} />
           <Route path="/slides" element={<SlidePage />} />
+          <Route path="/documents/:documentId" element={<DocumentDetailPage />} />
+          <Route
+            path="/manage"
+            element={(
+              <ProtectedRoute allowedRoles={['school', 'teacher']}>
+                <ManagePage />
+              </ProtectedRoute>
+            )}
+          />
         </Routes>
       </div>
     </Router>

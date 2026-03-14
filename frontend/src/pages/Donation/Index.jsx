@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../store/AuthContext';
+import { getApiErrorMessage, saveDonation } from '../../services/apiService';
 
 const DonationPage = () => {
+  const { currentUser } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     bookName: '',
@@ -10,16 +14,39 @@ const DonationPage = () => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    setFormData({
+      fullName: currentUser?.fullName || '',
+      bookName: '',
+      grade: currentUser?.grade || 'Khối 6',
+      condition: 'Còn mới',
+      message: '',
+    });
+  }, [currentUser]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Dữ liệu quyên góp:", formData);
-    // Sau này sẽ gọi API gửi về Backend ở đây
-    setSubmitted(true);
-    
-    // Reset form sau 3 giây
-    setTimeout(() => setSubmitted(false), 3000);
+    setError('');
+
+    try {
+      await saveDonation(formData);
+      setSubmitted(true);
+      setFormData({
+        fullName: currentUser?.fullName || '',
+        bookName: '',
+        grade: currentUser?.grade || 'Khối 6',
+        condition: 'Còn mới',
+        message: ''
+      });
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch (submitError) {
+      setError(getApiErrorMessage(submitError, 'Không thể gửi biểu mẫu quyên góp.'));
+    }
   };
+
+  const canDonate = Boolean(currentUser);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
@@ -47,6 +74,12 @@ const DonationPage = () => {
         {/* Phần 2: Form quyên góp */}
         <div className="bg-white p-8 rounded-2xl shadow-xl border border-blue-50">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Thông tin quyên góp</h2>
+          {!currentUser ? (
+            <div className="mb-5 rounded-2xl bg-amber-50 text-amber-700 px-4 py-3">
+              Bạn cần <Link to="/login" className="font-semibold underline">đăng nhập</Link> bằng tài khoản giáo viên hoặc học sinh để gửi biểu mẫu này.
+            </div>
+          ) : null}
+          {error ? <div className="mb-5 rounded-2xl bg-red-50 text-red-700 px-4 py-3">{error}</div> : null}
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -54,9 +87,11 @@ const DonationPage = () => {
               <input 
                 required
                 type="text" 
+                value={formData.fullName}
                 className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Nguyễn Văn A"
                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                disabled={!canDonate}
               />
             </div>
 
@@ -65,9 +100,11 @@ const DonationPage = () => {
               <input 
                 required
                 type="text" 
+                value={formData.bookName}
                 className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Ví dụ: Sách Toán 9 nâng cao"
                 onChange={(e) => setFormData({...formData, bookName: e.target.value})}
+                disabled={!canDonate}
               />
             </div>
 
@@ -75,8 +112,10 @@ const DonationPage = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Dành cho khối</label>
                 <select 
+                  value={formData.grade}
                   className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                   onChange={(e) => setFormData({...formData, grade: e.target.value})}
+                  disabled={!canDonate}
                 >
                   <option>Khối 6</option>
                   <option>Khối 7</option>
@@ -87,8 +126,10 @@ const DonationPage = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tình trạng</label>
                 <select 
+                  value={formData.condition}
                   className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                   onChange={(e) => setFormData({...formData, condition: e.target.value})}
+                  disabled={!canDonate}
                 >
                   <option>Còn mới</option>
                   <option>Đã sử dụng</option>
@@ -101,14 +142,17 @@ const DonationPage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Lời nhắn (nếu có)</label>
               <textarea 
                 rows="3"
+                value={formData.message}
                 className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Chúc các em học tốt nhé."
                 onChange={(e) => setFormData({...formData, message: e.target.value})}
+                disabled={!canDonate}
               ></textarea>
             </div>
 
             <button 
               type="submit"
+              disabled={!canDonate}
               className={`w-full py-3 rounded-lg font-bold text-white transition-all ${submitted ? 'bg-green-500' : 'bg-blue-600 hover:bg-blue-700'}`}
             >
               {submitted ? 'Đã gửi thành công! ✨' : 'Gửi thông tin quyên góp'}

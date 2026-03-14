@@ -1,18 +1,38 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import BookCard from '../../components/cards/BookCard';
+import { getDocumentsBySection, getUniqueSubjects } from '../../services/apiService';
 
 const SlidePage = () => {
-  const slides = [
-    { id: 1, title: "Slide Bài giảng: Hệ thức lượng trong tam giác", author: "Thầy Tùng", category: "Toán", grade: "Khối 9", type: "Toán", image: "https://img.freepik.com/free-vector/presentation-concept-illustration_114360-155.jpg" },
-    { id: 2, title: "Slide Ngữ Văn: Phân tích bài thơ Đồng Chí", author: "Cô Lan", category: "Văn", grade: "Khối 9", type: "Văn", image: "https://img.freepik.com/free-vector/blogging-concept-illustration_114360-788.jpg" },
-    { id: 3, title: "Slide Vật Lý: Quang học và thấu kính", author: "Thầy Hùng", category: "Lý", grade: "Khối 9", type: "Lý", image: "https://img.freepik.com/free-vector/science-concept-illustration_114360-5381.jpg" },
-  ];
-
+  const [slides, setSlides] = useState([]);
+  const [subjects, setSubjects] = useState(['Tất cả']);
   const [filterType, setFilterType] = useState("Tất cả");
+  const [selectedGrade, setSelectedGrade] = useState('Tất cả');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      const [nextSlides, nextSubjects] = await Promise.all([
+        getDocumentsBySection('slides'),
+        getUniqueSubjects('slides'),
+      ]);
+
+      if (isMounted) {
+        setSlides(nextSlides);
+        setSubjects(['Tất cả', ...nextSubjects]);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredSlides = filterType === "Tất cả" 
-    ? slides 
-    : slides.filter(s => s.type === filterType);
+    ? slides.filter((slide) => selectedGrade === 'Tất cả' || slide.grade === selectedGrade)
+    : slides.filter(s => s.subject === filterType && (selectedGrade === 'Tất cả' || s.grade === selectedGrade));
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -26,7 +46,7 @@ const SlidePage = () => {
           <div className="bg-white p-5 rounded-xl shadow-sm border">
             <h3 className="font-bold mb-4 text-gray-800">Môn học</h3>
             <div className="flex flex-col gap-3">
-              {["Tất cả", "Toán", "Văn", "Lý"].map(type => (
+              {subjects.map(type => (
                 <button 
                   key={type}
                   onClick={() => setFilterType(type)}
@@ -37,20 +57,35 @@ const SlidePage = () => {
               ))}
             </div>
           </div>
+
+          <div className="bg-white p-5 rounded-xl shadow-sm border">
+            <h3 className="font-bold mb-4 text-gray-800">Khối lớp</h3>
+            <div className="flex flex-col gap-3">
+              {["Tất cả", "Khối 6", "Khối 7", "Khối 8", "Khối 9"].map(grade => (
+                <button 
+                  key={grade}
+                  onClick={() => setSelectedGrade(grade)}
+                  className={`text-left px-4 py-2 rounded-lg text-sm transition ${selectedGrade === grade ? 'bg-indigo-100 text-indigo-600 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}
+                >
+                  {grade}
+                </button>
+              ))}
+            </div>
+          </div>
         </aside>
 
         <div className="flex-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSlides.map((slide) => (
-              <BookCard 
-                key={slide.id}
-                title={slide.title}
-                author={slide.author}
-                category={slide.type}
-                image={slide.image}
-              />
+              <BookCard key={slide.id} document={slide} />
             ))}
           </div>
+
+          {filteredSlides.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-xl border border-dashed text-gray-400 mt-6">
+              Chưa có slide phù hợp với bộ lọc hiện tại.
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
