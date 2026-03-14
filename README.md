@@ -143,6 +143,12 @@ Tu thu muc `backend`:
 
 Lenh tren la cach ngan gon de chay backend local tren port `8001`.
 
+Khi deploy len Render, `run_backend.py` tu dong:
+
+- bind ra `0.0.0.0`
+- doc port tu bien moi truong `PORT`
+- tat `reload`
+
 API health check:
 
 ```text
@@ -193,6 +199,13 @@ Muc nay dung de ban giao cho nguoi tiep theo hoac de giu quy trinh lam viec on d
 8. Neu frontend can du lieu moi, cap nhat `frontend/src/services/apiService.js`.
 9. Sau do moi cap nhat page, component hoac auth context ben frontend.
 10. Chay build frontend va test API co ban truoc khi ban giao.
+
+### Quy trinh deploy len Render
+
+1. Dat start command la `python run_backend.py` trong service backend.
+2. Khong hard-code port trong Render, vi script se tu doc `PORT`.
+3. Dam bao Render service root dang tro vao thu muc `backend` hoac start command chay tu thu muc nay.
+4. Sau khi deploy, kiem tra `GET /health` truoc khi test cac API con lai.
 
 ### Quy trinh sua frontend
 

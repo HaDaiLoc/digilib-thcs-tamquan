@@ -70,6 +70,8 @@ Sau do review file trong `alembic/versions/` truoc khi chay upgrade.
 
 Lenh tren khoi dong FastAPI local tai `http://127.0.0.1:8001`.
 
+Khi chay tren Render, cung script nay se tu dong bind `0.0.0.0:$PORT` va khong bat `reload`.
+
 ## Endpoint hien co
 
 ### Auth
