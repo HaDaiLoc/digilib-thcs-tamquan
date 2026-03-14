@@ -65,8 +65,10 @@ Sau do review file trong `alembic/versions/` truoc khi chay upgrade.
 ## Chay backend local
 
 ```powershell
-& "C:/Users/NHA LINH/AppData/Local/Programs/Python/Python312/python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+& "C:/Users/NHA LINH/AppData/Local/Programs/Python/Python312/python.exe" run_backend.py
 ```
+
+Lenh tren khoi dong FastAPI local tai `http://127.0.0.1:8001`.
 
 ## Endpoint hien co
 
@@ -112,20 +114,20 @@ Sau do review file trong `alembic/versions/` truoc khi chay upgrade.
 ### Health
 
 ```powershell
-Invoke-RestMethod -Uri "http://127.0.0.1:8000/health"
+Invoke-RestMethod -Uri "http://127.0.0.1:8001/health"
 ```
 
 ### Login
 
 ```powershell
 $body = @{ identifier = 'school@tamquan.edu.vn'; password = '123456' } | ConvertTo-Json
-Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/auth/login" -Method Post -ContentType "application/json" -Body $body
+Invoke-RestMethod -Uri "http://127.0.0.1:8001/api/auth/login" -Method Post -ContentType "application/json" -Body $body
 ```
 
 ### Documents
 
 ```powershell
-Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/documents?section=library"
+Invoke-RestMethod -Uri "http://127.0.0.1:8001/api/documents?section=library"
 ```
 
 ## Seed data

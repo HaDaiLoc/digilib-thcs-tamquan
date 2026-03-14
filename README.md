@@ -98,10 +98,10 @@ Luu y:
 Co the tao file `frontend/.env` neu muon doi API URL:
 
 ```env
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_API_BASE_URL=http://127.0.0.1:8001/api
 ```
 
-Neu khong khai bao, frontend mac dinh goi `http://127.0.0.1:8000/api`.
+Neu khong khai bao, frontend mac dinh goi `http://127.0.0.1:8001/api`.
 
 ## Cai dat va chay du an
 
@@ -134,13 +134,15 @@ Lenh nay se:
 Tu thu muc `backend`:
 
 ```powershell
-& "C:/Users/NHA LINH/AppData/Local/Programs/Python/Python312/python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+& "C:/Users/NHA LINH/AppData/Local/Programs/Python/Python312/python.exe" run_backend.py
 ```
+
+Lenh tren la cach ngan gon de chay backend local tren port `8001`.
 
 API health check:
 
 ```text
-GET http://127.0.0.1:8000/health
+GET http://127.0.0.1:8001/health
 ```
 
 ### 4. Cai dat frontend
@@ -180,7 +182,7 @@ Muc nay dung de ban giao cho nguoi tiep theo hoac de giu quy trinh lam viec on d
 1. Keo ma moi nhat ve may va chuyen vao root du an.
 2. Kiem tra `backend/.env` va `frontend/.env` da dung chua.
 3. Khoi dong backend truoc, sau do khoi dong frontend.
-4. Xac nhan `GET /health` tra ve `ok`.
+4. Xac nhan `GET http://127.0.0.1:8001/health` tra ve `ok`.
 5. Neu tinh nang lien quan database, cap nhat model trong `backend/app/models.py`.
 6. Neu co thay doi contract API, cap nhat schema trong `backend/app/schemas.py` va route trong `backend/app/api/`.
 7. Neu frontend can du lieu moi, cap nhat `frontend/src/services/apiService.js` truoc.

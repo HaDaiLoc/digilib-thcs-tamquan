@@ -46,7 +46,7 @@ npm install
 Neu can doi API URL, tao file `frontend/.env`:
 
 ```env
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_API_BASE_URL=http://127.0.0.1:8001/api
 ```
 
 Neu khong tao file nay, frontend mac dinh goi API local.
