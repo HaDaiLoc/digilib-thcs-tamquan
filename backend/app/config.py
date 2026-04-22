@@ -1,4 +1,4 @@
-﻿import ast
+import ast
 import os
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -60,12 +60,22 @@ def parse_cors_origins(raw_value: str | None) -> list[str]:
     return [origin.strip() for origin in raw_value.split(',') if origin.strip()] or default_origins
 
 
+
+
 def get_env_value(env_values: dict[str, str], *keys: str, default: str = '') -> str:
     for key in keys:
         value = os.getenv(key) or env_values.get(key)
         if value:
             return value
     return default
+def parse_api_keys(*raw_values: str | None) -> list[str]:
+    keys: list[str] = []
+    for raw_value in raw_values:
+        if not raw_value:
+            continue
+        parts = [part.strip() for part in raw_value.split(',') if part.strip()]
+        keys.extend(parts)
+    return list(dict.fromkeys(keys))
 
 
 @dataclass(frozen=True)
@@ -79,6 +89,7 @@ class Settings:
     nvidia_api_base_url: str = 'https://router.huggingface.co/v1'
     nvidia_api_key: str = ''
     nvidia_model: str = 'google/gemma-4-31b-it:novita'
+    ai_api_keys: list[str] = field(default_factory=list)
 
     ai_request_timeout_seconds: int = 45
     ai_max_response_tokens: int = 1024
@@ -105,6 +116,23 @@ def get_settings() -> Settings:
     if not database_url:
         raise RuntimeError('DATABASE_URL is missing. Set it in environment variables or backend/.env.')
 
+    primary_api_key = get_env_value(
+        env_values,
+        'NVIDIA_API_KEY',
+        'HF_TOKEN',
+        'HF_API_KEY',
+        'AI_API_KEY',
+        default='',
+    )
+    api_keys = parse_api_keys(
+        get_env_value(env_values, 'NVIDIA_API_KEYS'),
+        get_env_value(env_values, 'HF_TOKENS'),
+        get_env_value(env_values, 'AI_API_KEYS'),
+        get_env_value(env_values, 'HF_TOKEN_DL'),
+        get_env_value(env_values, 'HF_TOKEN_NL'),
+        primary_api_key,
+    )
+
     return Settings(
         app_name=get_env_value(env_values, 'APP_NAME', default='Digital Library API'),
         api_prefix=get_env_value(env_values, 'API_PREFIX', default='/api'),
@@ -117,14 +145,7 @@ def get_settings() -> Settings:
             'AI_API_BASE_URL',
             default='https://router.huggingface.co/v1',
         ),
-        nvidia_api_key=get_env_value(
-            env_values,
-            'NVIDIA_API_KEY',
-            'HF_TOKEN',
-            'HF_API_KEY',
-            'AI_API_KEY',
-            default='',
-        ),
+        nvidia_api_key=primary_api_key,
         nvidia_model=get_env_value(
             env_values,
             'NVIDIA_MODEL',
@@ -132,6 +153,7 @@ def get_settings() -> Settings:
             'AI_MODEL',
             default='google/gemma-4-31b-it:novita',
         ),
+        ai_api_keys=api_keys,
         ai_request_timeout_seconds=int(get_env_value(env_values, 'AI_REQUEST_TIMEOUT_SECONDS', default='30')),
         ai_max_response_tokens=int(get_env_value(env_values, 'AI_MAX_RESPONSE_TOKENS', default='700')),
         ai_candidate_limit=int(get_env_value(env_values, 'AI_CANDIDATE_LIMIT', default='10')),

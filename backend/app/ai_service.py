@@ -1,4 +1,4 @@
-﻿import json
+import json
 import re
 import unicodedata
 from urllib import error, request
@@ -310,6 +310,25 @@ def build_messages(
     ]
 
 
+
+def _iter_api_keys(settings: Settings) -> list[str]:
+    candidates = list(settings.ai_api_keys or [])
+    if settings.nvidia_api_key:
+        candidates.append(settings.nvidia_api_key)
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for token in candidates:
+        token = token.strip()
+        if not token or token in seen:
+            continue
+        seen.add(token)
+        deduped.append(token)
+    return deduped
+
+
+def _should_try_next_token(status_code: int) -> bool:
+    return status_code in {401, 403, 408, 409, 425, 429} or status_code >= 500
 def generate_advisor_answer(
     *,
     settings: Settings,
@@ -322,7 +341,8 @@ def generate_advisor_answer(
     resource_type: str | None,
     exam_goal: str | None,
 ) -> str:
-    if not settings.nvidia_api_key:
+    api_keys = _iter_api_keys(settings)
+    if not api_keys:
         raise RuntimeError('AI_API_KEY is missing.')
 
     messages = build_messages(
@@ -343,33 +363,48 @@ def generate_advisor_answer(
         'max_tokens': settings.ai_max_response_tokens,
         'stream': False,
     }
-    http_request = request.Request(
-        url=f"{settings.nvidia_api_base_url.rstrip('/')}/chat/completions",
-        data=json.dumps(payload).encode('utf-8'),
-        headers={
-            'Authorization': f'Bearer {settings.nvidia_api_key}',
-            'Content-Type': 'application/json',
-        },
-        method='POST',
-    )
 
-    try:
-        with request.urlopen(http_request, timeout=settings.ai_request_timeout_seconds) as response:
-            response_payload = json.loads(response.read().decode('utf-8'))
-    except error.HTTPError as exc:
-        raise RuntimeError(f'AI request failed with status {exc.code}.') from exc
-    except error.URLError as exc:
-        raise RuntimeError('Unable to reach AI service.') from exc
+    last_error: Exception | None = None
 
-    choices = response_payload.get('choices') or []
-    if not choices:
-        raise RuntimeError('AI service returned an empty response.')
+    for index, api_key in enumerate(api_keys, start=1):
+        http_request = request.Request(
+            url=f"{settings.nvidia_api_base_url.rstrip('/')}/chat/completions",
+            data=json.dumps(payload).encode('utf-8'),
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json',
+            },
+            method='POST',
+        )
 
-    content = choices[0].get('message', {}).get('content', '').strip()
-    if not content:
-        raise RuntimeError('AI service returned no answer content.')
+        try:
+            with request.urlopen(http_request, timeout=settings.ai_request_timeout_seconds) as response:
+                response_payload = json.loads(response.read().decode('utf-8'))
 
-    return content
+            choices = response_payload.get('choices') or []
+            if not choices:
+                raise RuntimeError('AI service returned an empty response.')
+
+            content = choices[0].get('message', {}).get('content', '').strip()
+            if not content:
+                raise RuntimeError('AI service returned no answer content.')
+
+            return content
+        except error.HTTPError as exc:
+            last_error = exc
+            if index < len(api_keys) and _should_try_next_token(exc.code):
+                continue
+            raise RuntimeError(f'AI request failed with status {exc.code}.') from exc
+        except error.URLError as exc:
+            last_error = exc
+            if index < len(api_keys):
+                continue
+            raise RuntimeError('Unable to reach AI service.') from exc
+
+    if last_error is not None:
+        raise RuntimeError('AI request failed after trying all configured API keys.') from last_error
+
+    raise RuntimeError('AI request failed before sending request.')
 
 
 def parse_recommended_ids(answer: str) -> list[str]:
