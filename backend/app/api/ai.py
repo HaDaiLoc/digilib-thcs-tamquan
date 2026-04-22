@@ -1,4 +1,8 @@
-﻿from typing import Annotated
+﻿from __future__ import annotations
+
+import re
+import unicodedata
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -26,6 +30,47 @@ from app.schemas import AiAdvisorDocument, AiAdvisorRequest, AiAdvisorResponse, 
 
 
 router = APIRouter(prefix='/ai', tags=['ai'])
+
+
+def normalize_text(value: str | None) -> str:
+    if not value:
+        return ''
+    normalized = unicodedata.normalize('NFD', value)
+    normalized = ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
+    return normalized.lower().replace('đ', 'd').strip()
+
+
+def tokenize_question(question: str) -> list[str]:
+    normalized = normalize_text(question)
+    normalized = re.sub(r'[^\w\s]', ' ', normalized, flags=re.UNICODE)
+    return [token for token in normalized.split() if len(token) >= 2]
+
+
+def has_meaningful_relevance(
+    question: str,
+    advisor_documents: list[AiAdvisorDocument],
+    subjects: list[str] | None,
+) -> bool:
+    if not advisor_documents:
+        return False
+
+    tokens = tokenize_question(question)
+    normalized_subjects = {normalize_text(subject) for subject in (subjects or []) if subject}
+    best_score = 0
+
+    for document in advisor_documents:
+        haystack = normalize_text(
+            f'{document.title} {document.description} {document.subject} {document.resource_type} {document.grade}'
+        )
+        score = sum(1 for token in tokens if token in haystack)
+        if normalized_subjects and normalize_text(document.subject) in normalized_subjects:
+            score += 3
+        if score > best_score:
+            best_score = score
+
+    if normalized_subjects:
+        return best_score >= 2
+    return best_score >= 3
 
 
 def normalize_subjects(subjects: list[str] | None) -> list[str] | None:
@@ -103,14 +148,19 @@ def advisor(
         limit=settings.ai_candidate_limit,
     )
     advisor_documents = [to_advisor_document(document) for document in candidate_documents]
-    plan_by_subject = build_study_plan_by_subject(applied_subjects or [], advisor_documents)
+
+    llm_documents = advisor_documents
+    if not has_meaningful_relevance(question, advisor_documents, applied_subjects):
+        llm_documents = []
+
+    plan_by_subject = build_study_plan_by_subject(applied_subjects or [], llm_documents)
 
     try:
         answer = generate_advisor_answer(
             settings=settings,
             current_user=current_user,
             question=question,
-            documents=advisor_documents,
+            documents=llm_documents,
             grade=applied_grade,
             subjects=applied_subjects,
             section=applied_section,
@@ -123,7 +173,7 @@ def advisor(
             detail='Khong the ket noi tro ly AI luc nay. Vui long thu lai sau.',
         ) from exc
 
-    recommended = select_recommended_documents(answer, advisor_documents) if advisor_documents else []
+    recommended = select_recommended_documents(answer, llm_documents) if llm_documents else []
     cleaned_answer = strip_recommended_ids_json(answer)
 
     return AiAdvisorResponse(

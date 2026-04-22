@@ -13,7 +13,7 @@ def normalize_text(text: str | None) -> str:
         return ''
     value = unicodedata.normalize('NFD', text)
     value = ''.join(ch for ch in value if unicodedata.category(ch) != 'Mn')
-    return value.lower().replace('đ', 'd').strip()
+    return value.lower().replace('Ã„â€˜', 'd').strip()
 
 
 def contains_any(text: str, keywords: list[str]) -> bool:
@@ -25,21 +25,21 @@ def equals_normalized(a: str | None, b: str | None) -> bool:
 
 
 GRADE_KEYWORDS = {
-    'Khối 6': ['khoi 6', 'lop 6', 'toan 6', 'van 6', 'anh 6'],
-    'Khối 7': ['khoi 7', 'lop 7', 'toan 7', 'van 7', 'anh 7'],
-    'Khối 8': ['khoi 8', 'lop 8', 'toan 8', 'van 8', 'anh 8'],
-    'Khối 9': ['khoi 9', 'lop 9', 'toan 9', 'van 9', 'anh 9', 'vao 10'],
+    'KhÃ¡Â»â€˜i 6': ['khoi 6', 'lop 6', 'toan 6', 'van 6', 'anh 6'],
+    'KhÃ¡Â»â€˜i 7': ['khoi 7', 'lop 7', 'toan 7', 'van 7', 'anh 7'],
+    'KhÃ¡Â»â€˜i 8': ['khoi 8', 'lop 8', 'toan 8', 'van 8', 'anh 8'],
+    'KhÃ¡Â»â€˜i 9': ['khoi 9', 'lop 9', 'toan 9', 'van 9', 'anh 9', 'vao 10'],
 }
 
 SUBJECT_KEYWORDS = {
-    'Toán': ['toan'],
-    'Văn': ['ngu van', 'van hoc', 'bai tho', 'tho', 'van'],
-    'Tiếng Anh': ['tieng anh', 'anh van'],
-    'Vật lý': ['vat ly', 'mon ly'],
-    'Hóa học': ['hoa hoc', 'mon hoa'],
-    'Sinh học': ['sinh hoc'],
-    'Lịch sử': ['lich su'],
-    'Địa lý': ['dia ly'],
+    'ToÃƒÂ¡n': ['toan'],
+    'VÃ„Æ’n': ['ngu van', 'van hoc', 'bai tho', 'tho', 'van'],
+    'TiÃ¡ÂºÂ¿ng Anh': ['tieng anh', 'anh van'],
+    'VÃ¡ÂºÂ­t lÃƒÂ½': ['vat ly', 'mon ly'],
+    'HÃƒÂ³a hÃ¡Â»Âc': ['hoa hoc', 'mon hoa'],
+    'Sinh hÃ¡Â»Âc': ['sinh hoc'],
+    'LÃ¡Â»â€¹ch sÃ¡Â»Â­': ['lich su'],
+    'Ã„ÂÃ¡Â»â€¹a lÃƒÂ½': ['dia ly'],
 }
 
 SECTION_KEYWORDS = {
@@ -50,9 +50,9 @@ SECTION_KEYWORDS = {
 
 RESOURCE_TYPE_KEYWORDS = {
     'Ebook': ['ebook', 'sach'],
-    'Tài liệu': ['tai lieu'],
-    'Đề thi': ['de thi'],
-    'Đề cương': ['de cuong'],
+    'TÃƒÂ i liÃ¡Â»â€¡u': ['tai lieu'],
+    'Ã„ÂÃ¡Â»Â thi': ['de thi'],
+    'Ã„ÂÃ¡Â»Â cÃ†Â°Ã†Â¡ng': ['de cuong'],
     'Slide': ['slide', 'bai giang'],
 }
 
@@ -150,32 +150,32 @@ def score_document(
     if subjects and any(equals_normalized(document.subject, subject) for subject in subjects):
         score += 10
 
-    if grade and not equals_normalized(grade, 'Tất cả'):
+    if grade and not equals_normalized(grade, 'TÃ¡ÂºÂ¥t cÃ¡ÂºÂ£'):
         if equals_normalized(document.grade, grade):
             score += 5
-        elif equals_normalized(document.grade, 'Tất cả'):
+        elif equals_normalized(document.grade, 'TÃ¡ÂºÂ¥t cÃ¡ÂºÂ£'):
             score += 2
 
-    if section and not equals_normalized(section, 'Tất cả') and equals_normalized(document.section, section):
+    if section and not equals_normalized(section, 'TÃ¡ÂºÂ¥t cÃ¡ÂºÂ£') and equals_normalized(document.section, section):
         score += 4
     elif suggested_sections and document.section in suggested_sections:
         idx = suggested_sections.index(document.section)
         score += max(3 - idx, 1)
 
-    if resource_type and not equals_normalized(resource_type, 'Tất cả') and equals_normalized(document.resource_type, resource_type):
+    if resource_type and not equals_normalized(resource_type, 'TÃ¡ÂºÂ¥t cÃ¡ÂºÂ£') and equals_normalized(document.resource_type, resource_type):
         score += 4
 
     if exam_goal == 'entrance_10':
         if document.section == 'exams':
             score += 5
-        if any(equals_normalized(document.resource_type, value) for value in ('Đề thi', 'Đề cương')):
+        if any(equals_normalized(document.resource_type, value) for value in ('Ã„ÂÃ¡Â»Â thi', 'Ã„ÂÃ¡Â»Â cÃ†Â°Ã†Â¡ng')):
             score += 6
-        if equals_normalized(document.grade, 'Khối 9'):
+        if equals_normalized(document.grade, 'KhÃ¡Â»â€˜i 9'):
             score += 3
     elif exam_goal in {'midterm', 'final'}:
         if document.section == 'exams':
             score += 3
-        if any(equals_normalized(document.resource_type, value) for value in ('Đề thi', 'Đề cương')):
+        if any(equals_normalized(document.resource_type, value) for value in ('Ã„ÂÃ¡Â»Â thi', 'Ã„ÂÃ¡Â»Â cÃ†Â°Ã†Â¡ng')):
             score += 3
 
     return score
@@ -271,7 +271,7 @@ def build_messages(
             'Quy tac: '
             '- Uu tien dua tren danh sach tai lieu duoc cung cap de goi y hoc lieu. '
             '- Co the bo sung giai thich kien thuc tong quan cho hoc sinh bang ngon ngu de hieu. '
-            '- Khong duoc bịa them tai lieu ngoai danh sach. '
+            '- Khong duoc bÃ¡Â»â€¹a them tai lieu ngoai danh sach. '
             '- Ket thuc bang 1 dong JSON: {"recommended_ids": [...]} (toi da 5 ID, neu khong co thi []). '
             '- Tra loi bang tieng Viet than thien voi hoc sinh THCS.'
         )
@@ -279,7 +279,7 @@ def build_messages(
             f"{learner_context}\n\n"
             f"Cau hoi cua hoc sinh: {question}\n\n"
             f"Danh sach tai lieu ung vien (moi tai lieu co mot ID duy nhat):\n{document_context}\n\n"
-            'Hay tra loi cau hoi theo cach de hieu, va neu phu hop thi de xuat tai lieu trong danh sach. '
+            'Hay tra loi kien thuc cau hoi truoc bang cach de hieu. Neu co tai lieu thuc su lien quan thi moi de xuat tai lieu. '
             'Ket thuc bang JSON: {"recommended_ids": [...]}.'
         )
     else:
@@ -287,14 +287,14 @@ def build_messages(
             'Ban la tro ly hoc tap cho hoc sinh THCS Tam Quan. '
             'Nhiem vu: tra loi cac cau hoi kien thuc mon hoc, dinh huong cach hoc, va de xuat huong on tap thuc te. '
             'Hien tai khong co tai lieu nao trong CSDL phu hop de de xuat truc tiep, '
-            'vi vay khong duoc bịa tai lieu cu the hoac ID tai lieu. '
+            'vi vay khong duoc bÃ¡Â»â€¹a tai lieu cu the hoac ID tai lieu. '
             'Ket thuc bang 1 dong JSON: {"recommended_ids": []}. '
             '- Tra loi bang tieng Viet ro rang, ngan gon, de hoc sinh de hieu.'
         )
         user_content = (
             f"{learner_context}\n\n"
             f"Cau hoi cua hoc sinh: {question}\n\n"
-            'Hay tra loi kien thuc mon hoc hoac dinh huong cach hoc phu hop voi cau hoi. '
+            'Hay tra loi kien thuc mon hoc truoc, sau do dua ra huong hoc phu hop. '
             'Vi khong co tai lieu ung vien, hay ket thuc bang JSON: {"recommended_ids": []}.'
         )
 
@@ -464,4 +464,4 @@ def select_recommended_documents(
         selected = [doc_map[doc_id] for doc_id in recommended_ids if doc_id in doc_map]
         if selected:
             return selected
-    return advisor_documents[:fallback_limit]
+    return []
