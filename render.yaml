@@ -30,3 +30,12 @@
         sync: false
       - key: CORS_ORIGIN_REGEX
         value: ^https?://(localhost|127\.0\.0\.1)(:\d+)?$
+
+  - type: static
+    name: digilib-thcs-tamquan-frontend
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
