@@ -1,0 +1,32 @@
+﻿services:
+  - type: web
+    name: digilib-thcs-tamquan-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    preDeployCommand: alembic upgrade head
+    startCommand: python run_backend.py
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: NVIDIA_API_BASE_URL
+        value: https://integrate.api.nvidia.com/v1
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: NVIDIA_MODEL
+        value: meta/llama-3.1-70b-instruct
+      - key: AI_REQUEST_TIMEOUT_SECONDS
+        value: "30"
+      - key: AI_MAX_RESPONSE_TOKENS
+        value: "700"
+      - key: AI_CANDIDATE_LIMIT
+        value: "10"
+      - key: AI_MAX_QUESTION_LENGTH
+        value: "500"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: CORS_ORIGIN_REGEX
+        value: ^https?://(localhost|127\.0\.0\.1)(:\d+)?$
