@@ -1,4 +1,4 @@
-from typing import Annotated
+﻿from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -34,7 +34,6 @@ def normalize_subjects(subjects: list[str] | None) -> list[str] | None:
     deduped = [subject.strip() for subject in subjects if subject and subject.strip() and subject.strip() != 'Tất cả']
     if not deduped:
         return None
-    # Keep insertion order while removing duplicates.
     return list(dict.fromkeys(deduped))
 
 
@@ -87,15 +86,9 @@ def advisor(
     applied_resource_type = payload.resource_type or inferred_resource_type
 
     query = select(Document)
-
-    # Only grade filter is applied at DB level (most reliable signal).
-    # Subject / section / resource_type are handled by the scoring & LLM layers
-    # so the candidate pool stays broad and relevant docs are not excluded
-    # when inference is ambiguous.
     if applied_grade and applied_grade != 'Tất cả':
         query = query.where(Document.grade.in_([applied_grade, 'Tất cả']))
 
-    # Fetch a broad candidate pool, then score/rank in Python for better relevance.
     documents = db.scalars(query.order_by(Document.created_at.desc()).limit(max(settings.ai_candidate_limit * 10, 50))).all()
 
     candidate_documents = rank_candidate_documents(
@@ -111,19 +104,6 @@ def advisor(
     )
     advisor_documents = [to_advisor_document(document) for document in candidate_documents]
     plan_by_subject = build_study_plan_by_subject(applied_subjects or [], advisor_documents)
-
-    if not advisor_documents:
-        return AiAdvisorResponse(
-            answer='Hien chua co tai lieu phu hop voi bo loc hoac cau hoi nay. Ban hay thu doi mon hoc, khoi lop hoac mo rong dieu kien tim kiem.',
-            recommended_documents=[],
-            applied_grade=applied_grade,
-            applied_subject=applied_subject,
-            applied_subjects=applied_subjects,
-            applied_section=applied_section,
-            applied_resource_type=applied_resource_type,
-            applied_exam_goal=applied_exam_goal,
-            plan_by_subject=plan_by_subject,
-        )
 
     try:
         answer = generate_advisor_answer(
@@ -143,7 +123,7 @@ def advisor(
             detail='Khong the ket noi tro ly AI luc nay. Vui long thu lai sau.',
         ) from exc
 
-    recommended = select_recommended_documents(answer, advisor_documents)
+    recommended = select_recommended_documents(answer, advisor_documents) if advisor_documents else []
     cleaned_answer = strip_recommended_ids_json(answer)
 
     return AiAdvisorResponse(

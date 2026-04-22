@@ -1,4 +1,4 @@
-import ast
+﻿import ast
 import os
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -16,7 +16,7 @@ def normalize_database_url(database_url: str) -> str:
     parsed = urlsplit(database_url)
     query = dict(parse_qsl(parsed.query))
 
-    if 'render.com' in parsed.hostname and 'sslmode' not in query:
+    if parsed.hostname and 'render.com' in parsed.hostname and 'sslmode' not in query:
         query['sslmode'] = 'require'
 
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment))
@@ -60,15 +60,26 @@ def parse_cors_origins(raw_value: str | None) -> list[str]:
     return [origin.strip() for origin in raw_value.split(',') if origin.strip()] or default_origins
 
 
+def get_env_value(env_values: dict[str, str], *keys: str, default: str = '') -> str:
+    for key in keys:
+        value = os.getenv(key) or env_values.get(key)
+        if value:
+            return value
+    return default
+
+
 @dataclass(frozen=True)
 class Settings:
     app_name: str = 'Digital Library API'
     api_prefix: str = '/api'
     secret_key: str = 'digital-library-secret-key'
     database_url: str = ''
-    nvidia_api_base_url: str = 'https://integrate.api.nvidia.com/v1'
+
+    # Kept as nvidia_* for backward compatibility with existing app code.
+    nvidia_api_base_url: str = 'https://router.huggingface.co/v1'
     nvidia_api_key: str = ''
-    nvidia_model: str = 'meta/llama-3.1-70b-instruct'
+    nvidia_model: str = 'google/gemma-4-31b-it:novita'
+
     ai_request_timeout_seconds: int = 45
     ai_max_response_tokens: int = 1024
     ai_candidate_limit: int = 15
@@ -89,23 +100,42 @@ class Settings:
 @lru_cache
 def get_settings() -> Settings:
     env_values = load_env_file()
-    database_url = os.getenv('DATABASE_URL') or env_values.get('DATABASE_URL', '')
+    database_url = get_env_value(env_values, 'DATABASE_URL')
 
     if not database_url:
         raise RuntimeError('DATABASE_URL is missing. Set it in environment variables or backend/.env.')
 
     return Settings(
-        app_name=os.getenv('APP_NAME') or env_values.get('APP_NAME', 'Digital Library API'),
-        api_prefix=os.getenv('API_PREFIX') or env_values.get('API_PREFIX', '/api'),
-        secret_key=os.getenv('SECRET_KEY') or env_values.get('SECRET_KEY', 'digital-library-secret-key'),
+        app_name=get_env_value(env_values, 'APP_NAME', default='Digital Library API'),
+        api_prefix=get_env_value(env_values, 'API_PREFIX', default='/api'),
+        secret_key=get_env_value(env_values, 'SECRET_KEY', default='digital-library-secret-key'),
         database_url=database_url,
-        nvidia_api_base_url=os.getenv('NVIDIA_API_BASE_URL') or env_values.get('NVIDIA_API_BASE_URL', 'https://integrate.api.nvidia.com/v1'),
-        nvidia_api_key=os.getenv('NVIDIA_API_KEY') or env_values.get('NVIDIA_API_KEY', ''),
-        nvidia_model=os.getenv('NVIDIA_MODEL') or env_values.get('NVIDIA_MODEL', 'meta/llama-3.1-70b-instruct'),
-        ai_request_timeout_seconds=int(os.getenv('AI_REQUEST_TIMEOUT_SECONDS') or env_values.get('AI_REQUEST_TIMEOUT_SECONDS', '30')),
-        ai_max_response_tokens=int(os.getenv('AI_MAX_RESPONSE_TOKENS') or env_values.get('AI_MAX_RESPONSE_TOKENS', '700')),
-        ai_candidate_limit=int(os.getenv('AI_CANDIDATE_LIMIT') or env_values.get('AI_CANDIDATE_LIMIT', '10')),
-        ai_max_question_length=int(os.getenv('AI_MAX_QUESTION_LENGTH') or env_values.get('AI_MAX_QUESTION_LENGTH', '500')),
-        cors_origin_regex=os.getenv('CORS_ORIGIN_REGEX') or env_values.get('CORS_ORIGIN_REGEX', r'^https?://(localhost|127\.0\.0\.1)(:\d+)?$'),
-        cors_origins=parse_cors_origins(os.getenv('CORS_ORIGINS') or env_values.get('CORS_ORIGINS')),
+        nvidia_api_base_url=get_env_value(
+            env_values,
+            'NVIDIA_API_BASE_URL',
+            'HF_API_BASE_URL',
+            'AI_API_BASE_URL',
+            default='https://router.huggingface.co/v1',
+        ),
+        nvidia_api_key=get_env_value(
+            env_values,
+            'NVIDIA_API_KEY',
+            'HF_TOKEN',
+            'HF_API_KEY',
+            'AI_API_KEY',
+            default='',
+        ),
+        nvidia_model=get_env_value(
+            env_values,
+            'NVIDIA_MODEL',
+            'HF_MODEL',
+            'AI_MODEL',
+            default='google/gemma-4-31b-it:novita',
+        ),
+        ai_request_timeout_seconds=int(get_env_value(env_values, 'AI_REQUEST_TIMEOUT_SECONDS', default='30')),
+        ai_max_response_tokens=int(get_env_value(env_values, 'AI_MAX_RESPONSE_TOKENS', default='700')),
+        ai_candidate_limit=int(get_env_value(env_values, 'AI_CANDIDATE_LIMIT', default='10')),
+        ai_max_question_length=int(get_env_value(env_values, 'AI_MAX_QUESTION_LENGTH', default='500')),
+        cors_origin_regex=get_env_value(env_values, 'CORS_ORIGIN_REGEX', default=r'^https?://(localhost|127\.0\.0\.1)(:\d+)?$'),
+        cors_origins=parse_cors_origins(get_env_value(env_values, 'CORS_ORIGINS')),
     )
